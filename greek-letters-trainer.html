@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greek Alphabet Learning</title>
+    <style>
+        svg {
+            width: 320px;
+            height: 320px;
+            border: none;
+            background-color: white;
+        }
+        .segment {
+            fill: #ddd;
+            stroke: white;
+            stroke-width: 6;
+            cursor: pointer;
+            transition: stroke-width 0.1s, fill 0.2s, background-color 0.3s ease;
+        }
+        .segment:hover {
+            fill: #ccf;
+            stroke-width: 4;
+        }
+        .wrong {
+            fill: #f00;
+        }
+        .wrong:hover {
+            fill: #f44;
+        }
+        .correct {
+            fill: #0f0;
+        }
+        .correct:hover {
+            fill: #4f4;
+        }
+        text {
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-size: 18px;
+            pointer-events: none;
+        }
+        #center-text {
+            font-size: 32px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <svg id="alphabet-svg" viewBox="0 0 320 320"></svg>
+    </div>
+
+    <script>
+        const centerX = 160;
+        const centerY = 160;
+        const outerRadius = 160;
+        const innerRadius = 65;
+        const numSegments = 9;
+        const svg = document.getElementById("alphabet-svg");
+        let exerciseActive = true;
+
+        const greekAlphabet = [
+            // Uppercase Greek Letters
+            [
+                ["Α", "Alpha"], ["Β", "Beta"], ["Γ", "Gamma"], ["Δ", "Delta"], ["Ε", "Epsilon"],
+                ["Ζ", "Zeta"], ["Η", "Eta"], ["Θ", "Theta"], ["Ι", "Iota"], ["Κ", "Kappa"],
+                ["Λ", "Lambda"], ["Μ", "Mu"], ["Ν", "Nu"], ["Ξ", "Xi"], ["Ο", "Omicron"],
+                ["Π", "Pi"], ["Ρ", "Rho"], ["Σ", "Sigma"], ["Τ", "Tau"], ["Υ", "Upsilon"],
+                ["Φ", "Phi"], ["Χ", "Chi"], ["Ψ", "Psi"], ["Ω", "Omega"]
+            ],
+            // Lowercase Greek Letters
+            [
+                ["α", "alpha"], ["β", "beta"], ["γ", "gamma"], ["δ", "delta"], ["ε", "epsilon"],
+                ["ζ", "zeta"], ["η", "eta"], ["θ", "theta"], ["ι", "iota"], ["κ", "kappa"],
+                ["λ", "lambda"], ["μ", "mu"], ["ν", "nu"], ["ξ", "xi"], ["ο", "omicron"],
+                ["π", "pi"], ["ρ", "rho"], ["σ", "sigma"], ["τ", "tau"], ["υ", "upsilon"],
+                ["φ", "phi"], ["χ", "chi"], ["ψ", "psi"], ["ω", "omega"]
+            ]
+        ];
+
+        // Function to create a pie slice path
+        function createSegmentPath(startAngle, endAngle, innerRadius, outerRadius) {
+            const startOuterX = centerX + outerRadius * Math.cos(startAngle);
+            const startOuterY = centerY + outerRadius * Math.sin(startAngle);
+            const endOuterX = centerX + outerRadius * Math.cos(endAngle);
+            const endOuterY = centerY + outerRadius * Math.sin(endAngle);
+
+            const startInnerX = centerX + innerRadius * Math.cos(endAngle);
+            const startInnerY = centerY + innerRadius * Math.sin(endAngle);
+            const endInnerX = centerX + innerRadius * Math.cos(startAngle);
+            const endInnerY = centerY + innerRadius * Math.sin(startAngle);
+
+            return `
+                M ${startOuterX} ${startOuterY}
+                A ${outerRadius} ${outerRadius} 0 0 1 ${endOuterX} ${endOuterY}
+                L ${startInnerX} ${startInnerY}
+                A ${innerRadius} ${innerRadius} 0 0 0 ${endInnerX} ${endInnerY}
+                Z
+            `;
+        }
+
+        function clearSVG() {
+            while (svg.firstChild) {
+                svg.removeChild(svg.firstChild);
+            }
+        }
+
+        function randomize() {
+            const letters = Array.from({ length: 24 }, (_, i) => i);  // Array of 0 to 23
+            letters.sort(() => Math.random() - 0.5);  // Shuffle array
+            
+            return {
+                lowerUpper: Math.floor(Math.random() * 2),
+                direction: Math.floor(Math.random() * 2),
+                letters: letters.slice(0, numSegments),  // Pick the first `numSegments`
+                pick: Math.floor(Math.random() * numSegments),
+            };
+        }
+
+        function newExcercise() {
+            clearSVG(); // Clear old segments
+            const exercise = randomize();  // Get a new exercise
+            createSegments(exercise);
+            createCenterText(exercise);
+        }
+
+        function createSegments(exercise) {
+            for (let i = 0; i < numSegments; i++) {
+                const startAngle = (0.25 + (i / numSegments)) * 2 * Math.PI;
+                const endAngle = (0.25 + ((i + 1) / numSegments)) * 2 * Math.PI;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", createSegmentPath(startAngle, endAngle, innerRadius, outerRadius));
+                path.classList.add("segment");
+
+                // Handle segment click
+                path.addEventListener("click", () => {
+                    if (!exerciseActive) return;  // Ignore clicks after a correct answer
+                    
+                    const correct = i === exercise.pick;
+                    path.classList.add(correct ? "correct" : "wrong");
+                    
+                    if (correct) {
+                        exerciseActive = false;
+                        setTimeout(() => {
+                            exerciseActive = true;
+                            newExcercise();
+                        }, 500);
+                    }
+                });
+
+                svg.appendChild(path);
+
+                // Calculate the text position for each segment
+                const textAngle = (startAngle + endAngle) / 2;
+                const textX = centerX + (innerRadius + outerRadius) / 2 * Math.cos(textAngle);
+                const textY = centerY + (innerRadius + outerRadius) / 2 * Math.sin(textAngle);
+
+                const buttonText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                buttonText.setAttribute("x", textX);
+                buttonText.setAttribute("y", textY);
+                buttonText.textContent = greekAlphabet[exercise.lowerUpper][exercise.letters[i]][exercise.direction];
+                svg.appendChild(buttonText);
+            }
+        }
+
+        function createCenterText(exercise) {
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.textContent = greekAlphabet[exercise.lowerUpper][exercise.letters[exercise.pick]][1 - exercise.direction];
+            text.setAttribute("x", 160);
+            text.setAttribute("y", 160);
+            text.id = "center-text";
+            svg.appendChild(text);
+        }
+
+        newExcercise();
+    </script>
+</body>
+</html>
